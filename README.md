@@ -12,9 +12,9 @@ The filter can accept and correct multiple keypoints, from a Keypoint3d_list mes
 The package listens to the topic where the Keypoint3d_list messages are published, and it publishes the corrected points to the /kalman_points topic.
 
 - change the variable keypoint_topic in config/params.yaml, this is the subscribed topic,
-- run roslaunch kalman_filter kalman_filter.launch,
+- run ```roslaunch kalman_filter kalman_filter.launch```,
 - begin publishing (via rosbag or other packages) the 3d keypoints to the subscribed topic and receive the /kalman_points.
 #### Configuration parameters
-- online: set to true if time is calculated from the message's timestamps
-- keypoint_topic: topic to subscribe to
-- frequency: frame frequency, used to calculate time between messages in off-line mode
+- <em>online</em>: set to true if time is calculated from the message's timestamps
+- <em>keypoint_topic</em>: topic to subscribe to
+- <em>frequency</em>: frame frequency, used to calculate time between messages in off-line mode
