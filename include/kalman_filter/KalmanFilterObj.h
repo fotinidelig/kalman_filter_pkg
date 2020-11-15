@@ -9,7 +9,7 @@
 class KalmanFilterObj
 {
 public:
-	KalmanFilterObj( bool is3D, float freq, bool online);
+	KalmanFilterObj(float freq, bool online);
 	void KalmanFilterCallback(const keypoint_3d_matching_msgs::Keypoint3d_list msg);
 	void Init(int size);
 	bool is3D;
@@ -17,7 +17,7 @@ public:
 private: 
 	int measLen, stateLen, keypnt_num;
 	
-	long double prevTime;
+	long double prevTime = 0.0;
 	// long double curdT;
 	float dT;
 

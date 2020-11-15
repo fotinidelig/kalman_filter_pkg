@@ -1,4 +1,3 @@
 keypoint_topic: "/raw_points_online"
-is3D: true
-frequency: 60
+frequency: 30
 online: false
