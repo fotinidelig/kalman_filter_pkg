@@ -14,3 +14,7 @@ The package listens to the topic where the Keypoint3d_list messages are publishe
 - change the variable keypoint_topic in config/params.yaml, this is the subscribed topic,
 - run roslaunch kalman_filter kalman_filter.launch,
 - begin publishing (via rosbag or other packages) the 3d keypoints to the subscribed topic and receive the /kalman_points.
+#### Configuration parameters
+- online: set to true if time is calculated from the message's timestamps
+- keypoint_topic: topic to subscribe to
+- frequency: frame frequency, used to calculate time between messages in off-line mode
