@@ -2,6 +2,7 @@
 
 ![Build Status](https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/OpenCV_Logo_with_text_svg_version.svg/180px-OpenCV_Logo_with_text_svg_version.svg.png)
 <img src="http://wiki.ros.org/melodic?action=AttachFile&do=get&target=melodic.jpg" width="220">
+<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQhykQfMn6vBr8q24DRapZ_PqBerW491szxvg&usqp=CAU" width="220">
 ***
 A ROS package with an implemented kalman filter, using the OpenCV KalmanFilter class.\
 Implemented and used for smoothing OpenPose detected keypoints.\
