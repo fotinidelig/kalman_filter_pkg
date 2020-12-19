@@ -31,6 +31,7 @@ P: estimation error covariance
 
 ****/
 
+/* change if needed */
 #define DIST_1 0.10
 #define DIST_2 0.18
 
@@ -93,16 +94,17 @@ void KalmanFilterObj::Init(int size){
 	x_t2 = cv::Mat(measLen, 1, type);
 
 	cv::setIdentity(kf.transitionMatrix);
-	cv::setIdentity(kf.measurementNoiseCov, 0.015); /* R = 0.015, OpenPose calculated error */ /*TODO*/
 
 	for (i=0;i<=keypnt_num;i++){
-		kf.measurementNoiseCov.at<double>(3*i+1,3*i+1) = 0.018; /*y-axis is noisier*/ /*TODO*/
+		kf.measurementNoiseCov.at<double>(3*i,3*i) = 0.005; /* R_x = 0.005 */
+		kf.measurementNoiseCov.at<double>(3*i+1,3*i+1) = 0.005; /* R_y = 0.005 */
+		kf.measurementNoiseCov.at<double>(3*i+2,3*i+2) = 0.003; /*R_z = 0.003 */
 	}
 
-	cv::setIdentity(kf.processNoiseCov, cv::Scalar(8e-3)); /* Q = 0.008 */ /*TODO*/
+	cv::setIdentity(kf.processNoiseCov, cv::Scalar(15e-3)); /* Q = 0.015 */
 	kf.measurementMatrix = cv::Mat::zeros(measLen, stateLen, type);
 	cv::setIdentity(kf.measurementMatrix);
-	// cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1)); /*TODO*/
+	cv::setIdentity(kf.errorCovPost, cv::Scalar::all(1)); /*TODO*/
 	cv::setIdentity(kf.controlMatrix);
 }
 
@@ -159,6 +161,7 @@ void KalmanFilterObj::KalmanFilterCallback(const keypoint_3d_matching_msgs::Keyp
 			x_t2.at<double>(3*i+1) = msg.keypoints[i].points.point.y;
 			x_t2.at<double>(3*i+2) = msg.keypoints[i].points.point.z;
 		}
+		
 		/* publish the initial measurements unchanged*/
 		pub.publish(msg);
 		return;
@@ -206,7 +209,7 @@ void KalmanFilterObj::KalmanFilterCallback(const keypoint_3d_matching_msgs::Keyp
 	}
 
 	/* predict state */
-	predicted = kf.predict();
+	predicted = kf.predict(velocity);
 
 	/* update state */
 	corrected = kf.correct(measurement);
@@ -216,17 +219,17 @@ void KalmanFilterObj::KalmanFilterCallback(const keypoint_3d_matching_msgs::Keyp
 		corrected_msg.keypoints[i].points.header = msg.keypoints[i].points.header;
 		corrected_msg.keypoints[i].points.header.stamp = ros::Time::now(); /* only change timestamp jtb precise */
 
-		/* check if keypoint wasn't found */
-		/* keep current prediction and ignore measurement value NaN */
+		/* check if keypoint is an outlier */
+		/* if so, keep current prediction and ignore measurement value */
 		if(is_outlier(msg.keypoints[i].points.point, prev_keypoints.keypoints[i].points.point, was_outlier.at<int>(i))){
 
-			corrected_msg.keypoints[i].points.point.x = predicted.at<double>(3*i);
-			corrected_msg.keypoints[i].points.point.y = predicted.at<double>(3*i+1);
-			corrected_msg.keypoints[i].points.point.z = predicted.at<double>(3*i+2);
-
-			// corrected_msg.keypoints[i].points.point.x = 0;
-			// corrected_msg.keypoints[i].points.point.y = 0;
-			// corrected_msg.keypoints[i].points.point.z = 0;
+			// corrected_msg.keypoints[i].points.point.x = predicted.at<double>(3*i);
+			// corrected_msg.keypoints[i].points.point.y = predicted.at<double>(3*i+1);
+			// corrected_msg.keypoints[i].points.point.z = predicted.at<double>(3*i+2);
+			
+			corrected_msg.keypoints[i].points.point.x = 0;
+			corrected_msg.keypoints[i].points.point.y = 0;
+			corrected_msg.keypoints[i].points.point.z = 0;
 
 			kf.statePost.at<double>(3*i)   = x_t1.at<double>(3*i); 
 			kf.statePost.at<double>(3*i+1) = x_t1.at<double>(3*i+1);
@@ -250,12 +253,17 @@ void KalmanFilterObj::KalmanFilterCallback(const keypoint_3d_matching_msgs::Keyp
 	/* calculate new velocity */
 
 	x_t1.copyTo(x_t2); // x_t2 <- x_t1
-	measurement.copyTo(x_t1); // x_t1 <- measurement
+	// measurement.copyTo(x_t1); // x_t1 <- measurement
+	for(i = 0; i < keypnt_num; i++){
+		x_t1.at<double>(3*i)   = corrected.at<double>(3*i);
+		x_t1.at<double>(3*i+1) = corrected.at<double>(3*i+1);
+		x_t1.at<double>(3*i+2) = corrected.at<double>(3*i+2);
+	}
 
 	cv::subtract(x_t1,x_t2,velocity);
 	cv::divide(velocity, timer, velocity);
 
-	// /* velocity for NaN points */
+	/* velocity for NaN points */
 	for(i = 0; i < keypnt_num; i++){
 		if(is_outlier(msg.keypoints[i].points.point, prev_keypoints.keypoints[i].points.point, was_outlier.at<int>(i))){
 			was_outlier.at<int>(i)	   = 1;
@@ -277,19 +285,6 @@ void KalmanFilterObj::KalmanFilterCallback(const keypoint_3d_matching_msgs::Keyp
 		}
 	}
 	velocity.copyTo(temp_vel);
-
-	/* publish velocity */
-	/*
-	std_msgs::Float64MultiArray velmsg;
-
-
-    // push data into velocity msg
-    for(i = 0; i < measLen; i++) {
-        velmsg.data.push_back(velocity.at<double>(i)); 
-    }
-
-	vel.publish(velmsg);
-	*/
 
 	/* update previous keypoint values */
 	for (i = 0; i < keypnt_num; i++){
